@@ -1,44 +1,43 @@
-from fastapi import FastAPI, Request
-from telegram.ext import Application, ApplicationBuilder
-from telegram.ext.webhook import WebhookHandler
-from src.config.config import TELEGRAM_TOKEN, setup_sentry, WEBHOOK_URL
-from src.handlers.commands import register_handlers
-from src.database.db import Base, engine  # Ensure correct relative import
+from telegram.ext import Application
+from telegram import BotCommand
+from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, setup_sentry  # Ensure correct relative import
+from src.handlers.commands import register_handlers  # Ensure correct relative import
+from apscheduler.schedulers.background import BackgroundScheduler
+from src.services.trip import close_expired_trips  # Ensure correct relative import
 import logging
+from src.database.db import Base, engine  # Ensure correct relative import
 
-# Initialize FastAPI app
-app = FastAPI()
 
-# Initialize Sentry
-setup_sentry()
+async def set_bot_commands(application: Application):
+    await application.bot.set_my_commands([
+        BotCommand("start", "Register as a user"),
+        BotCommand("switch_role", "Switch between driver and passenger roles"),
+        BotCommand("create_trip", "Create a new trip (drivers only)"),
+        BotCommand("get_trip", "Get details of a specific trip"),
+        BotCommand("list_trips", "List all trips"),
+        BotCommand("help", "Show help message"),
+        BotCommand("admin_status", "List full database status (admin only)"),  # Add new command
+        BotCommand("my_id", "Show your Telegram ID")  # Add new command
+    ])
 
-# Ensure database schema is initialized
-Base.metadata.create_all(bind=engine)
+def main():
+    setup_sentry()  # Initialize Sentry
+    print('Admins:', ADMIN_IDS)
+    # Ensure database schema is initialized
+    Base.metadata.create_all(bind=engine)
 
-# Initialize Telegram bot application
-application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-register_handlers(application)
+    application = Application.builder().token(TELEGRAM_TOKEN).post_init(set_bot_commands).build()
+    register_handlers(application)
 
-# Set up webhook handler
-webhook_handler = WebhookHandler(application)
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(close_expired_trips, "cron", hour=0, minute=0)  # Run at midnight
+    scheduler.start()
 
-@app.post("/webhook")
-async def telegram_webhook(request: Request):
-    """
-    Handle incoming Telegram webhook updates.
-    """
-    return await webhook_handler.handle(request)
+    try:
+        application.run_polling()
+    except Exception as e:
+        logging.exception("An error occurred in the bot.")
+        raise
 
-@app.on_event("startup")
-async def on_startup():
-    """
-    Set the webhook URL when the application starts.
-    """
-    await application.bot.set_webhook(WEBHOOK_URL)
-
-@app.on_event("shutdown")
-async def on_shutdown():
-    """
-    Clean up resources when the application shuts down.
-    """
-    await application.shutdown()
+if __name__ == "__main__":
+    main()
