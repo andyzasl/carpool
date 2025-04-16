@@ -26,11 +26,9 @@ def set_bot_commands(application: Application):
 
 def main():
     global application
-    setup_sentry()  # Initialize Sentry
     Base.metadata.create_all(bind=engine)  # Ensure database schema is initialized
 
-    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    set_bot_commands(application)
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).post_init(set_bot_commands).build()
     register_handlers(application)
 
     # Set up webhook
