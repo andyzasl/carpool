@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException
+from sentry_sdk import capture_exception
 from telegram import Update
 from telegram.ext import Application, CallbackContext, CommandHandler
 from contextlib import asynccontextmanager
@@ -73,25 +74,23 @@ async def webhook(request: Request):
     global application
     logger.info("Received webhook request")
     try:
-        # Fallback: Reinitialize if application is None
-        if application is None:
-            logger.warning("Application is None, reinitializing")
-            initialize_application()
-            await application.bot.set_webhook(url=WEBHOOK_URL)
-            logger.info("Application reinitialized and webhook set")
+        initialize_application()
+        # await application.bot.set_webhook(url=WEBHOOK_URL)
+        logger.info("Application reinitialized and webhook set")
 
         json_data = await request.json()
         update = Update.de_json(json_data, application.bot)
         if not update:
             logger.warning("Invalid update received")
             return {"ok": False}
-
+        logger.info("Update seems to be ok")
         # Process the update
         await application.process_update(update)
         logger.info("Update processed successfully")
         return {"ok": True}
     except Exception as e:
         logger.error(f"Error in webhook: {str(e)}")
+        capture_exception(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 # Example handler
