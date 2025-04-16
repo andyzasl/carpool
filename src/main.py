@@ -1,13 +1,14 @@
 import logging
-from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, CallbackContext
 from telegram import BotCommand, Update
 from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry
 from src.handlers.commands import register_handlers
 from src.database.db import Base, engine
 from sentry_sdk import capture_exception, capture_message
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 import sentry_sdk
+from pprint import pprint
 
 # Initialize Sentry before the bot application
 setup_sentry()
@@ -27,12 +28,12 @@ def set_bot_commands(application: Application):
         BotCommand("my_id", "Show your Telegram ID")
     ])
 
-@app.post("/webhook")
+@app.post("/webhook-x")
 async def webhook_handler(request: Request):
     """
     Handle incoming webhook requests from Telegram.
     """
-    sentry_sdk.set_context("app_state", {"state": str(app.state)})
+    sentry_sdk.set_context("app_state", {"state": pprint(app.state)})
     if not hasattr(app.state, "application") or app.state.application is None:
         capture_message("Application not initialized")
         raise RuntimeError("The application is not initialized. Ensure the on_startup function is executed.")
@@ -52,6 +53,24 @@ async def webhook_handler(request: Request):
         capture_exception(e)
         sentry_sdk.set_context("webhook_request", {"update": update})
         return JSONResponse(content={"ok": False, "error": str(e)})
+
+@app.post("/webhook")
+async def webhook(request: Request):
+    """Handle webhook updates."""
+
+    try:
+        json_data = await request.json()
+        update = Update.de_json(json_data, app.state.application.bot)
+
+        # Pass the session to the handler
+        context = CallbackContext(app.state.application)  # Create a context
+
+        await app.state.application.process_update(update)
+        return {"ok": True}
+    except Exception as e:
+        capture_exception(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/")
 async def root_handler():
