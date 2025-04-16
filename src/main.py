@@ -30,6 +30,7 @@ def initialize_application():
             .token(TELEGRAM_TOKEN)
             .build()
         )
+        application.initialize()
         application.add_handler(CommandHandler("start", start))
         logger.info("Application initialized and handlers registered")
         return application
