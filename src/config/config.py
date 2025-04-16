@@ -3,6 +3,8 @@ import logging
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk.integrations.flask import FlaskIntegration  # Add Flask integration
+
 
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")  # Load Telegram bot token from environment variables
@@ -26,6 +28,6 @@ def setup_sentry():
     )
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        integrations=[sentry_logging, SqlalchemyIntegration()],
+        integrations=[sentry_logging, SqlalchemyIntegration(), FlaskIntegration()],
         traces_sample_rate=1.0,  # Adjust sampling rate as needed
     )

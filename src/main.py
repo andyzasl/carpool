@@ -8,6 +8,9 @@ import logging
 from src.database.db import Base, engine  # Ensure correct relative import
 from flask import Flask, request, jsonify
 
+# Initialize Sentry before Flask app
+setup_sentry()
+
 # Flask app for Vercel
 app = Flask(__name__)
 application: Application = None  # Global variable for the Telegram bot application
@@ -70,3 +73,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
