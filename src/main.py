@@ -77,7 +77,7 @@ async def webhook(request: Request):
         if application is None:
             logger.warning("Application is None, reinitializing")
             initialize_application()
-            await application.bot.set_webhook(url=settings.webhook_url)
+            await application.bot.set_webhook(url=WEBHOOK_URL)
             logger.info("Application reinitialized and webhook set")
 
         json_data = await request.json()
