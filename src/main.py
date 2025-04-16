@@ -7,6 +7,7 @@ from src.services.trip import close_expired_trips  # Ensure correct relative imp
 import logging
 from src.database.db import Base, engine  # Ensure correct relative import
 from flask import Flask, request, jsonify
+from sentry_sdk import capture_exception  # Import Sentry's exception capture function
 
 # Initialize Sentry before Flask app
 setup_sentry()
@@ -32,14 +33,17 @@ def telegram_webhook():
     """
     Handle incoming Telegram updates via webhook.
     """
+    global application
+    if application is None:  # Ensure application is initialized
+        main()  # Call main() to initialize the application
     try:
         data = request.get_json()
-        if application:
-            update = Update.de_json(data, application.bot)
-            application.process_update(update)  # Process the update directly
+        update = Update.de_json(data, application.bot)
+        application.process_update(update)  # Process the update directly
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         logging.exception("Error in Telegram webhook handler.")
+        capture_exception(e)  # Send exception details to Sentry
         return jsonify({"error": "An error occurred"}), 500
 
 @app.route("/api", methods=["POST"])
@@ -52,6 +56,7 @@ def vercel_handler():
         return jsonify({"message": "Request received", "data": data}), 200
     except Exception as e:
         logging.exception("Error in Vercel handler.")
+        capture_exception(e)  # Send exception details to Sentry
         return jsonify({"error": "An error occurred"}), 500
 
 def main():
@@ -73,4 +78,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

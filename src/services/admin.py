@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from src.database.db import SessionLocal
 from src.models.models import User, Trip, PickupPoint
+from sentry_sdk import capture_exception  # Import Sentry's exception capture function
 
 def get_full_status():
     session: Session = SessionLocal()
@@ -16,7 +17,7 @@ def get_full_status():
 
         return status
     except Exception as e:
-        logging.exception("Error while fetching full database status.")
+        capture_exception(e)  # Send exception details to Sentry
         raise
     finally:
         session.close()

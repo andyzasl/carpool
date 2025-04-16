@@ -5,6 +5,7 @@ from src.services.user import register_user, switch_role, get_user  # Ensure cor
 from src.services.trip import create_trip, get_trip, list_trips  # Ensure correct relative import
 from src.services.admin import get_full_status  # Ensure correct relative import
 from src.config.config import ADMIN_IDS
+from sentry_sdk import capture_exception  # Import Sentry's exception capture function
 
 def register_handlers(application):
     application.add_handler(CommandHandler("start", start))
@@ -23,7 +24,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         register_user(telegram_id=telegram_id, name=name)  # Ensure no explicit session argument
         await update.message.reply_text(f"Welcome, {name}! You have been registered as a passenger.")
     except Exception as e:
-        logging.exception("Error in /start command.")
+        capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred. Please try again later.")
 
 async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,7 +38,7 @@ async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
     except Exception as e:
-        logging.exception("Error in /switch_role command.")
+        capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred while switching roles. Please try again.")
 
 async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -54,7 +55,7 @@ async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
     except Exception as e:
-        logging.exception("Error in /create_trip command.")
+        capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred while creating the trip. Please try again.")
 
 async def get_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -79,7 +80,7 @@ async def get_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("Invalid trip ID. Please provide a valid number.")
     except Exception as e:
-        logging.exception("Error in /get_trip command.")
+        capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred while retrieving the trip. Please try again.")
 
 async def list_trips_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -98,7 +99,7 @@ async def list_trips_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
     except Exception as e:
-        logging.exception("Error in /list_trips command.")
+        capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred while listing trips. Please try again.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -130,7 +131,7 @@ async def admin_status_command(update: Update, context: ContextTypes.DEFAULT_TYP
         else:
             await update.message.reply_text("You do not have permission to access this command.")
     except Exception as e:
-        logging.exception("Error in /admin_status command.")
+        capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred while fetching the database status. Please try again.")
 
 async def my_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -141,7 +142,5 @@ async def my_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_id = update.effective_user.id
         await update.message.reply_text(f"Your Telegram ID is: {telegram_id}")
     except Exception as e:
-        logging.exception("Error in /my_id command.")
+        capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred. Please try again later.")
-
-
