@@ -3,14 +3,17 @@ from telegram.ext import Application, ApplicationBuilder, CommandHandler, Contex
 from telegram import BotCommand, Update
 from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry
 from src.handlers.commands import register_handlers
-from src.services.trip import close_expired_trips
 from src.database.db import Base, engine
 from sentry_sdk import capture_exception
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from mangum import Mangum  # For Vercel compatibility
 
 # Initialize Sentry before the bot application
 setup_sentry()
 
 application: Application = None  # Global variable for the Telegram bot application
+fastapi_app = FastAPI()  # FastAPI app for Vercel
 
 def set_bot_commands(application: Application):
     application.bot.set_my_commands([
@@ -24,6 +27,20 @@ def set_bot_commands(application: Application):
         BotCommand("my_id", "Show your Telegram ID")
     ])
 
+@fastapi_app.post(f"/{WEBHOOK_URL.split('/')[-1]}")
+async def webhook_handler(request: Request):
+    """
+    Handle incoming webhook requests from Telegram.
+    """
+    global application
+    try:
+        update = await request.json()
+        await application.update_queue.put(Update.de_json(update, application.bot))
+        return JSONResponse(content={"ok": True})
+    except Exception as e:
+        capture_exception(e)
+        return JSONResponse(content={"ok": False, "error": str(e)})
+
 def main():
     global application
     Base.metadata.create_all(bind=engine)  # Ensure database schema is initialized
@@ -35,13 +52,8 @@ def main():
     application.bot.set_webhook(url=WEBHOOK_URL)
     logging.info(f"Webhook set to {WEBHOOK_URL}")
 
-    # Start the bot
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=8443,
-        url_path=WEBHOOK_URL.split("/")[-1],
-        webhook_url=WEBHOOK_URL
-    )
+# Initialize the bot application
+main()
 
-if __name__ == "__main__":
-    main()  # Call the synchronous main function
+# Vercel handler
+handler = Mangum(fastapi_app)
