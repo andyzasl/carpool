@@ -9,11 +9,36 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 import sentry_sdk
 from pprint import pprint
+from contextlib import asynccontextmanager
 
 # Initialize Sentry before the bot application
 setup_sentry()
 
-app = FastAPI()  # FastAPI app for Vercel
+# Lifespan event handler
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle startup and shutdown events."""
+    # Startup: Initialize the Telegram bot application
+    application = (
+        Application.builder()
+        .token(TELEGRAM_TOKEN)
+        .build()
+    )
+    register_handlers(application)
+    set_bot_commands(application)
+    # Set the webhook
+    await application.bot.set_webhook(url=WEBHOOK_URL)
+
+    # Store the application in app.state
+    app.state.application = application
+
+    yield  # Application runs here
+
+    # Shutdown: Clean up
+    await application.stop()
+
+
+app = FastAPI(lifespan=lifespan)  # FastAPI app for Vercel
 
 
 def set_bot_commands(application: Application):
@@ -57,18 +82,16 @@ async def webhook_handler(request: Request):
 @app.post("/webhook")
 async def webhook(request: Request):
     """Handle webhook updates."""
-
     try:
         json_data = await request.json()
         update = Update.de_json(json_data, app.state.application.bot)
 
-        # Pass the session to the handler
-        context = CallbackContext(app.state.application)  # Create a context
-
+        # Process the update using the Application instance
         await app.state.application.process_update(update)
         return {"ok": True}
     except Exception as e:
-        capture_exception(e)
+        # Replace with your error logging (e.g., Sentry)
+        print(f"Error: {str(e)}")  # Temporary logging
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -78,31 +101,3 @@ async def root_handler():
     Return a 200 response for the root endpoint.
     """
     return JSONResponse(content={"message": "Carpool service is running"}, status_code=200)
-
-async def on_startup():
-    """
-    Initialize the Telegram bot application and set up the webhook.
-    """
-    Base.metadata.create_all(bind=engine)  # Ensure database schema is initialized
-
-    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    register_handlers(application)
-    set_bot_commands(application)
-
-    # Set up webhook
-    await application.bot.set_webhook(url=WEBHOOK_URL)
-    logging.info(f"Webhook set to {WEBHOOK_URL}")
-
-    # Store the application in FastAPI state for access in the webhook handler
-    app.state.application = application  # Ensure application is stored in app.state
-
-async def on_shutdown():
-    """
-    Gracefully shut down the Telegram bot application.
-    """
-    await app.state.application.shutdown()
-
-
-# Add startup and shutdown events to FastAPI
-app.add_event_handler("startup", on_startup)
-app.add_event_handler("shutdown", on_shutdown)
