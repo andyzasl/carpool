@@ -25,7 +25,7 @@ def set_bot_commands(application: Application):
         BotCommand("my_id", "Show your Telegram ID")
     ])
 
-@app.post(f"/{WEBHOOK_URL.split('/')[-1]}")
+@app.post("/webhook")
 async def webhook_handler(request: Request):
     """
     Handle incoming webhook requests from Telegram.
