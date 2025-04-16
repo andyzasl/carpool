@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 # Initialize Sentry before the bot application
 setup_sentry()
 
-fastapi_app = FastAPI()  # FastAPI app for Vercel
+app = FastAPI()  # FastAPI app for Vercel
 
 def set_bot_commands(application: Application):
     application.bot.set_my_commands([
@@ -25,20 +25,20 @@ def set_bot_commands(application: Application):
         BotCommand("my_id", "Show your Telegram ID")
     ])
 
-@fastapi_app.post(f"/{WEBHOOK_URL.split('/')[-1]}")
+@app.post(f"/{WEBHOOK_URL.split('/')[-1]}")
 async def webhook_handler(request: Request):
     """
     Handle incoming webhook requests from Telegram.
     """
     try:
         update = await request.json()
-        await fastapi_app.state.application.update_queue.put(Update.de_json(update, fastapi_app.state.application.bot))
+        await app.state.application.update_queue.put(Update.de_json(update, app.state.application.bot))
         return JSONResponse(content={"ok": True})
     except Exception as e:
         capture_exception(e)
         return JSONResponse(content={"ok": False, "error": str(e)})
 
-@fastapi_app.get("/")
+@app.get("/")
 async def root_handler():
     """
     Return a 200 response for the root endpoint.
@@ -60,17 +60,14 @@ async def on_startup():
     logging.info(f"Webhook set to {WEBHOOK_URL}")
 
     # Store the application in FastAPI state for access in the webhook handler
-    fastapi_app.state.application = application
+    app.state.application = application
 
 async def on_shutdown():
     """
     Gracefully shut down the Telegram bot application.
     """
-    await fastapi_app.state.application.shutdown()
+    await app.state.application.shutdown()
 
 # Add startup and shutdown events to FastAPI
-fastapi_app.add_event_handler("startup", on_startup)
-fastapi_app.add_event_handler("shutdown", on_shutdown)
-
-# Vercel will directly use the FastAPI app
-
+app.add_event_handler("startup", on_startup)
+app.add_event_handler("shutdown", on_shutdown)
