@@ -32,7 +32,7 @@ async def webhook_handler(request: Request):
     """
     Handle incoming webhook requests from Telegram.
     """
-    sentry_sdk.set_context("webhook_request", {"app": app})
+    sentry_sdk.set_context("app_state", {"state": str(app.state)})
     if not hasattr(app.state, "application") or app.state.application is None:
         raise RuntimeError("The application is not initialized. Ensure the on_startup function is executed.")
 
