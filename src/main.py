@@ -3,12 +3,11 @@ from telegram.ext import Application, ApplicationBuilder, CommandHandler, Contex
 from telegram import BotCommand, Update
 from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry  # Ensure correct relative import
 from src.handlers.commands import register_handlers  # Ensure correct relative import
-from apscheduler.schedulers.background import BackgroundScheduler
 from src.services.trip import close_expired_trips  # Ensure correct relative import
 import logging
 from src.database.db import Base, engine  # Ensure correct relative import
 from flask import Flask, request, jsonify
-from sentry_sdk import capture_exception  # Import Sentry's exception capture function
+from sentry_sdk import capture_exception, capture_event  # Import Sentry's exception capture function
 
 # Initialize Sentry before Flask app
 setup_sentry()
@@ -34,6 +33,7 @@ async def telegram_webhook():
     """
     Handle incoming Telegram updates via webhook.
     """
+    setup_sentry()
     global application
     if application is None:  # Ensure application is initialized
         await main()  # Call main() to initialize the application
@@ -72,11 +72,6 @@ async def main():
     # webhook_url = f"{WEBHOOK_URL}/webhook"
     # print(webhook_url)
     # await application.bot.set_webhook(url=webhook_url)  # Await the async method
-
-    # # Scheduler for background tasks
-    # scheduler = BackgroundScheduler()
-    # scheduler.add_job(close_expired_trips, "cron", hour=0, minute=0)  # Run at midnight
-    # scheduler.start()
 
 if __name__ == "__main__":
     asyncio.run(main())  # Use asyncio.run to execute the async main function
