@@ -43,7 +43,7 @@ async def telegram_webhook():
         await application.process_update(update)  # Process the update directly
         return jsonify({"status": "ok"}), 200
     except Exception as e:
-        logging.exception("Error in Telegram webhook handler.")
+        logging.exception("Error in Telegram webhook handler: ", e)
         capture_exception(e)  # Send exception details to Sentry
         return jsonify({"error": "An error occurred"}), 500
 
