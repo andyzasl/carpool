@@ -7,7 +7,6 @@ from src.database.db import Base, engine
 from sentry_sdk import capture_exception
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from mangum import Mangum  # For Vercel compatibility
 
 # Initialize Sentry before the bot application
 setup_sentry()
@@ -73,5 +72,5 @@ async def on_shutdown():
 fastapi_app.add_event_handler("startup", on_startup)
 fastapi_app.add_event_handler("shutdown", on_shutdown)
 
-# Vercel handler
-handler = Mangum(fastapi_app, lifespan="auto")  # Ensure lifespan is set to "auto" for FastAPI compatibility
+# Vercel will directly use the FastAPI app
+

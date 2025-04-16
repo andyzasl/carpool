@@ -9,7 +9,7 @@
   "routes": [
     {
       "src": "/.*",
-      "dest": "src/main.py"
+      "dest": "src/main.fastapi_app"
     }
   ],
   "buildCommand": "pip install -r requirements.txt"
