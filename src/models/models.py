@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, DateTime
 from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -17,6 +18,8 @@ class Trip(Base):
     id = Column(Integer, primary_key=True, index=True)
     driver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(String, nullable=False)
+    state = Column(String, default="active")  # New column for trip state
+    created_at = Column(DateTime, default=datetime.utcnow)  # Track creation time
 
 
 class PickupPoint(Base):
@@ -24,20 +27,4 @@ class PickupPoint(Base):
     id = Column(Integer, primary_key=True, index=True)
     trip_id = Column(Integer, ForeignKey("trips.id"), nullable=False)
     address = Column(String, nullable=False)
-    time = Column(String, nullable=False)
-
-
-class Participant(Base):
-    __tablename__ = "participants"
-    trip_id = Column(Integer, ForeignKey("trips.id"), primary_key=True)
-    passenger_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    pickup_point_id = Column(Integer, ForeignKey("pickup_points.id"))
-
-
-class TripTemplate(Base):
-    __tablename__ = "trip_templates"
-    id = Column(Integer, primary_key=True, index=True)
-    driver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    name = Column(String, nullable=False)
-    pickup_points = Column(JSON, nullable=False)
-    seats = Column(Integer, nullable=False)
+    time = Column(String, nullable=False)  # Time as a string for simplicity
