@@ -6,6 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from src.services.trip import close_expired_trips  # Ensure correct relative import
 import logging
 from src.database.db import Base, engine  # Ensure correct relative import
+from flask import Flask, request, jsonify  # Add Flask for Vercel handler
 
 
 async def set_bot_commands(application: Application):
@@ -39,6 +40,20 @@ def main():
         logging.exception("An error occurred in the bot.")
         raise
 
+app = Flask(__name__)  # Flask app for Vercel
+
+@app.route("/api", methods=["POST"])
+def vercel_handler():
+    """
+    Handle HTTP requests for Vercel deployment.
+    """
+    try:
+        data = request.get_json()
+        # Example: Respond with received data
+        return jsonify({"message": "Request received", "data": data}), 200
+    except Exception as e:
+        logging.exception("Error in Vercel handler.")
+        return jsonify({"error": "An error occurred"}), 500
+
 if __name__ == "__main__":
     main()
-
