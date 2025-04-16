@@ -36,7 +36,7 @@ async def telegram_webhook():
     """
     global application
     if application is None:  # Ensure application is initialized
-        main()  # Call main() to initialize the application
+        await main()  # Call main() to initialize the application
     try:
         data = request.get_json()
         update = Update.de_json(data, application.bot)
