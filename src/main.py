@@ -68,15 +68,15 @@ async def main():
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).post_init(set_bot_commands).build()
     register_handlers(application)
 
-    # Set webhook for Telegram bot
-    webhook_url = f"{WEBHOOK_URL}/webhook"
-    print(webhook_url)
-    await application.bot.set_webhook(url=webhook_url)  # Await the async method
+    # # Set webhook for Telegram bot
+    # webhook_url = f"{WEBHOOK_URL}/webhook"
+    # print(webhook_url)
+    # await application.bot.set_webhook(url=webhook_url)  # Await the async method
 
-    # Scheduler for background tasks
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(close_expired_trips, "cron", hour=0, minute=0)  # Run at midnight
-    scheduler.start()
+    # # Scheduler for background tasks
+    # scheduler = BackgroundScheduler()
+    # scheduler.add_job(close_expired_trips, "cron", hour=0, minute=0)  # Run at midnight
+    # scheduler.start()
 
 if __name__ == "__main__":
     asyncio.run(main())  # Use asyncio.run to execute the async main function
