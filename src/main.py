@@ -31,8 +31,14 @@ async def webhook_handler(request: Request):
     Handle incoming webhook requests from Telegram.
     """
     try:
+        # Parse the incoming update
         update = await request.json()
-        await app.state.application.update_queue.put(Update.de_json(update, app.state.application.bot))
+        telegram_update = Update.de_json(update, app.state.application.bot)
+
+        # Process the update asynchronously
+        app.state.application.create_task(app.state.application.process_update(telegram_update))
+
+        # Respond immediately to avoid timeout
         return JSONResponse(content={"ok": True})
     except Exception as e:
         capture_exception(e)
