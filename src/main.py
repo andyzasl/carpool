@@ -39,6 +39,13 @@ async def webhook_handler(request: Request):
         capture_exception(e)
         return JSONResponse(content={"ok": False, "error": str(e)})
 
+@fastapi_app.get("/")
+async def root_handler():
+    """
+    Return a 200 response for the root endpoint.
+    """
+    return JSONResponse(content={"message": "Carpool service is running"}, status_code=200)
+
 async def on_startup():
     """
     Initialize the Telegram bot application and set up the webhook.
@@ -67,4 +74,4 @@ fastapi_app.add_event_handler("startup", on_startup)
 fastapi_app.add_event_handler("shutdown", on_shutdown)
 
 # Vercel handler
-handler = Mangum(fastapi_app)
+handler = Mangum(fastapi_app, lifespan="auto")  # Ensure lifespan is set to "auto" for FastAPI compatibility
