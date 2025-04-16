@@ -7,11 +7,13 @@ from src.database.db import Base, engine
 from sentry_sdk import capture_exception
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+import sentry_sdk
 
 # Initialize Sentry before the bot application
 setup_sentry()
 
 app = FastAPI()  # FastAPI app for Vercel
+
 
 def set_bot_commands(application: Application):
     application.bot.set_my_commands([
@@ -30,6 +32,10 @@ async def webhook_handler(request: Request):
     """
     Handle incoming webhook requests from Telegram.
     """
+    sentry_sdk.set_context("webhook_request", {"app": app})
+    if not hasattr(app.state, "application") or app.state.application is None:
+        raise RuntimeError("The application is not initialized. Ensure the on_startup function is executed.")
+
     try:
         # Parse the incoming update
         update = await request.json()
@@ -41,7 +47,9 @@ async def webhook_handler(request: Request):
         # Respond immediately to avoid timeout
         return JSONResponse(content={"ok": True})
     except Exception as e:
+        # Capture exception and include all variables
         capture_exception(e)
+        sentry_sdk.set_context("webhook_request", {"update": update})
         return JSONResponse(content={"ok": False, "error": str(e)})
 
 @app.get("/")
@@ -73,6 +81,7 @@ async def on_shutdown():
     Gracefully shut down the Telegram bot application.
     """
     await app.state.application.shutdown()
+
 
 # Add startup and shutdown events to FastAPI
 app.add_event_handler("startup", on_startup)
