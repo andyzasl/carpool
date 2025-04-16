@@ -15,8 +15,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 setup_sentry()
+
 # Global Application instance
 application = None
 
@@ -30,7 +30,6 @@ def initialize_application():
             .token(TELEGRAM_TOKEN)
             .build()
         )
-        application.initialize()
         application.add_handler(CommandHandler("start", start))
         logger.info("Application initialized and handlers registered")
         return application
@@ -49,9 +48,10 @@ async def lifespan(app: FastAPI):
         # Initialize the Telegram bot application
         initialize_application()
 
-        # Set the webhook
-        await application.bot.set_webhook(url=WEBHOOK_URL)
-        logger.info(f"Webhook set to {WEBHOOK_URL}")
+        # Initialize the application and set the webhook
+        await application.initialize()
+        # await application.bot.set_webhook(url=WEBHOOK_URL)
+        # logger.info(f"Webhook set to {WEBHOOK_URL}")
 
         yield  # Application runs here
 
@@ -75,15 +75,16 @@ async def webhook(request: Request):
     global application
     logger.info("Received webhook request")
     try:
-        initialize_application()
-        # await application.bot.set_webhook(url=WEBHOOK_URL)
-        logger.info("Application reinitialized and webhook set")
+        if not application:
+            logger.error("Application not initialized")
+            raise HTTPException(status_code=500, detail="Application not initialized")
 
         json_data = await request.json()
         update = Update.de_json(json_data, application.bot)
         if not update:
             logger.warning("Invalid update received")
             return {"ok": False}
+
         logger.info("Update seems to be ok")
         # Process the update
         await application.process_update(update)
