@@ -5,5 +5,5 @@ python-dotenv==1.*
 alembic==1.*
 pytest==8.*
 psycopg2-binary>=2.9.0
-apscheduler==3.11.*
-Flask[async]==3.1.*
+fastapi==0.115.*
+uvicorn==0.34.*
