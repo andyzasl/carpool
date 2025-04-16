@@ -1,19 +1,23 @@
-import asyncio  # Import asyncio for running the async main function
+import asyncio
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes
 from telegram import BotCommand, Update
-from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry  # Ensure correct relative import
-from src.handlers.commands import register_handlers  # Ensure correct relative import
-from src.services.trip import close_expired_trips  # Ensure correct relative import
+from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry
+from src.handlers.commands import register_handlers
+from src.services.trip import close_expired_trips
 import logging
-from src.database.db import Base, engine  # Ensure correct relative import
-from flask import Flask, request, jsonify
-from sentry_sdk import capture_exception, capture_event  # Import Sentry's exception capture function
+from src.database.db import Base, engine
+from sentry_sdk import capture_exception
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
 
-# Initialize Sentry before Flask app
+# Initialize Sentry before FastAPI app
 setup_sentry()
 
-# Flask app for Vercel
-app = Flask(__name__)
+# FastAPI app for deployment
+app = FastAPI()
+
 application: Application = None  # Global variable for the Telegram bot application
 
 async def set_bot_commands(application: Application):
@@ -28,37 +32,36 @@ async def set_bot_commands(application: Application):
         BotCommand("my_id", "Show your Telegram ID")
     ])
 
-@app.route("/webhook", methods=["POST"])
-async def telegram_webhook():
+@app.post("/webhook")
+async def telegram_webhook(request: Request):
     """
     Handle incoming Telegram updates via webhook.
     """
-    setup_sentry()
     global application
     if application is None:  # Ensure application is initialized
         await main()  # Call main() to initialize the application
     try:
-        data = request.get_json()
+        data = await request.json()
         update = Update.de_json(data, application.bot)
         await application.process_update(update)  # Process the update directly
-        return jsonify({"status": "ok"}), 200
+        return JSONResponse({"status": "ok"}, status_code=200)
     except Exception as e:
         logging.exception("Error in Telegram webhook handler: ", e)
         capture_exception(e)  # Send exception details to Sentry
-        return jsonify({"error": "An error occurred"}), 500
+        return JSONResponse({"error": "An error occurred"}, status_code=500)
 
-@app.route("/api", methods=["POST"])
-def vercel_handler():
+@app.post("/api")
+async def vercel_handler(request: Request):
     """
     Handle HTTP requests for Vercel deployment.
     """
     try:
-        data = request.get_json()
-        return jsonify({"message": "Request received", "data": data}), 200
+        data = await request.json()
+        return JSONResponse({"message": "Request received", "data": data}, status_code=200)
     except Exception as e:
         logging.exception("Error in Vercel handler.")
         capture_exception(e)  # Send exception details to Sentry
-        return jsonify({"error": "An error occurred"}), 500
+        return JSONResponse({"error": "An error occurred"}, status_code=500)
 
 async def main():
     global application
@@ -67,11 +70,6 @@ async def main():
 
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).post_init(set_bot_commands).build()
     register_handlers(application)
-
-    # # Set webhook for Telegram bot
-    # webhook_url = f"{WEBHOOK_URL}/webhook"
-    # print(webhook_url)
-    # await application.bot.set_webhook(url=webhook_url)  # Await the async method
 
 if __name__ == "__main__":
     asyncio.run(main())  # Use asyncio.run to execute the async main function
