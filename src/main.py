@@ -1,3 +1,4 @@
+import asyncio  # Import asyncio for running the async main function
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes
 from telegram import BotCommand, Update
 from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry  # Ensure correct relative import
@@ -29,7 +30,7 @@ async def set_bot_commands(application: Application):
     ])
 
 @app.route("/webhook", methods=["POST"])
-def telegram_webhook():
+async def telegram_webhook():
     """
     Handle incoming Telegram updates via webhook.
     """
@@ -39,7 +40,7 @@ def telegram_webhook():
     try:
         data = request.get_json()
         update = Update.de_json(data, application.bot)
-        application.process_update(update)  # Process the update directly
+        await application.process_update(update)  # Process the update directly
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         logging.exception("Error in Telegram webhook handler.")
@@ -59,7 +60,7 @@ def vercel_handler():
         capture_exception(e)  # Send exception details to Sentry
         return jsonify({"error": "An error occurred"}), 500
 
-def main():
+async def main():
     global application
     setup_sentry()  # Initialize Sentry
     Base.metadata.create_all(bind=engine)  # Ensure database schema is initialized
@@ -69,7 +70,8 @@ def main():
 
     # Set webhook for Telegram bot
     webhook_url = f"{WEBHOOK_URL}/webhook"
-    application.bot.set_webhook(url=webhook_url)
+    print(webhook_url)
+    await application.bot.set_webhook(url=webhook_url)  # Await the async method
 
     # Scheduler for background tasks
     scheduler = BackgroundScheduler()
@@ -77,4 +79,5 @@ def main():
     scheduler.start()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())  # Use asyncio.run to execute the async main function
+
