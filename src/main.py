@@ -12,7 +12,6 @@ from mangum import Mangum  # For Vercel compatibility
 # Initialize Sentry before the bot application
 setup_sentry()
 
-application: Application = None  # Global variable for the Telegram bot application
 fastapi_app = FastAPI()  # FastAPI app for Vercel
 
 def set_bot_commands(application: Application):
@@ -32,28 +31,40 @@ async def webhook_handler(request: Request):
     """
     Handle incoming webhook requests from Telegram.
     """
-    global application
     try:
         update = await request.json()
-        await application.update_queue.put(Update.de_json(update, application.bot))
+        await fastapi_app.state.application.update_queue.put(Update.de_json(update, fastapi_app.state.application.bot))
         return JSONResponse(content={"ok": True})
     except Exception as e:
         capture_exception(e)
         return JSONResponse(content={"ok": False, "error": str(e)})
 
-def main():
-    global application
+async def on_startup():
+    """
+    Initialize the Telegram bot application and set up the webhook.
+    """
     Base.metadata.create_all(bind=engine)  # Ensure database schema is initialized
 
-    application = ApplicationBuilder().token(TELEGRAM_TOKEN).post_init(set_bot_commands).build()
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     register_handlers(application)
+    set_bot_commands(application)
 
     # Set up webhook
-    application.bot.set_webhook(url=WEBHOOK_URL)
+    await application.bot.set_webhook(url=WEBHOOK_URL)
     logging.info(f"Webhook set to {WEBHOOK_URL}")
 
-# Initialize the bot application
-main()
+    # Store the application in FastAPI state for access in the webhook handler
+    fastapi_app.state.application = application
+
+async def on_shutdown():
+    """
+    Gracefully shut down the Telegram bot application.
+    """
+    await fastapi_app.state.application.shutdown()
+
+# Add startup and shutdown events to FastAPI
+fastapi_app.add_event_handler("startup", on_startup)
+fastapi_app.add_event_handler("shutdown", on_shutdown)
 
 # Vercel handler
 handler = Mangum(fastapi_app)
