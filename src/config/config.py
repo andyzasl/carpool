@@ -11,13 +11,12 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")  # Load Telegram bot token from env
 XATA_DATABASE_URL = os.getenv("XATA_DATABASE_URL")  # Xata.io database URL
 DATABASE_URL = XATA_DATABASE_URL or os.getenv("DATABASE_URL", "sqlite:///carpool.db")  # Use Xata if configured, else SQLite
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+
 # Safely parse ADMIN_IDS environment variable
 try:
     ADMIN_IDS = list(map(int, filter(None, os.getenv("ADMIN_IDS", "").split(","))))
 except ValueError:
     ADMIN_IDS = []  # Default to an empty list if parsing fails
-
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Webhook URL for Telegram bot
 
 logging.basicConfig(level=logging.INFO)
 
@@ -31,3 +30,12 @@ def setup_sentry():
         integrations=[sentry_logging, SqlalchemyIntegration(), FlaskIntegration()],
         traces_sample_rate=1.0,  # Adjust sampling rate as needed
     )
+
+    # Enrich Sentry with Vercel runtime data
+    vercel_context = {
+        "vercel_region": os.getenv("VERCEL_REGION"),
+        "vercel_env": os.getenv("VERCEL_ENV"),
+        "vercel_url": os.getenv("VERCEL_URL"),
+    }
+    sentry_sdk.set_context("vercel_runtime", vercel_context)
+
