@@ -33,10 +33,10 @@ async def webhook_handler(request: Request):
     try:
         # Parse the incoming update
         update = await request.json()
-        telegram_update = Update.de_json(update, app.state.application.bot)
+        telegram_update = Update.de_json(update, app.state.application.bot)  # Ensure app.state.application is set
 
         # Process the update asynchronously
-        app.state.application.create_task(app.state.application.process_update(telegram_update))
+        await app.state.application.process_update(telegram_update)  # Use await instead of create_task
 
         # Respond immediately to avoid timeout
         return JSONResponse(content={"ok": True})
@@ -66,7 +66,7 @@ async def on_startup():
     logging.info(f"Webhook set to {WEBHOOK_URL}")
 
     # Store the application in FastAPI state for access in the webhook handler
-    app.state.application = application
+    app.state.application = application  # Ensure application is stored in app.state
 
 async def on_shutdown():
     """
