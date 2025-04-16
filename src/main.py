@@ -18,11 +18,15 @@ setup_sentry()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+# Global Application instance
+application = None
+
 # Lifespan event handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown events."""
     # Startup: Initialize the Telegram bot application
+    global application
     application = (
         Application.builder()
         .token(TELEGRAM_TOKEN)
@@ -58,42 +62,18 @@ def set_bot_commands(application: Application):
         BotCommand("my_id", "Show your Telegram ID")
     ])
 
-@app.post("/webhook-x")
-async def webhook_handler(request: Request):
-    """
-    Handle incoming webhook requests from Telegram.
-    """
-    sentry_sdk.set_context("app_state", {"state": pprint(app.state)})
-    if not hasattr(app.state, "application") or app.state.application is None:
-        capture_message("Application not initialized")
-        raise RuntimeError("The application is not initialized. Ensure the on_startup function is executed.")
-
-    try:
-        # Parse the incoming update
-        update = await request.json()
-        telegram_update = Update.de_json(update, app.state.application.bot)  # Ensure app.state.application is set
-
-        # Process the update asynchronously
-        await app.state.application.process_update(telegram_update)  # Use await instead of create_task
-
-        # Respond immediately to avoid timeout
-        return JSONResponse(content={"ok": True})
-    except Exception as e:
-        # Capture exception and include all variables
-        capture_exception(e)
-        sentry_sdk.set_context("webhook_request", {"update": update})
-        return JSONResponse(content={"ok": False, "error": str(e)})
 
 @app.post("/webhook")
 async def webhook(request: Request):
     """Handle webhook updates."""
+    global application
     logger.info("Received webhook request")
     try:
         json_data = await request.json()
-        update = Update.de_json(json_data, app.state.application.bot)
+        update = Update.de_json(json_data, application.bot)
 
         # Process the update using the Application instance
-        await app.state.application.process_update(update)
+        await application.process_update(update)
         logger.info("Update processed successfully")
         return {"ok": True}
     except Exception as e:
