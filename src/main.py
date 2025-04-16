@@ -76,8 +76,9 @@ async def webhook(request: Request):
     logger.info("Received webhook request")
     try:
         if not application:
-            logger.error("Application not initialized")
-            raise HTTPException(status_code=500, detail="Application not initialized")
+            await initialize_application()
+            logger.info("Application was re-initialized")
+            # raise HTTPException(status_code=500, detail="Application not initialized")
 
         json_data = await request.json()
         update = Update.de_json(json_data, application.bot)
