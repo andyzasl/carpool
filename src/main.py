@@ -14,6 +14,10 @@ from contextlib import asynccontextmanager
 # Initialize Sentry before the bot application
 setup_sentry()
 
+# Set up logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 # Lifespan event handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,6 +28,7 @@ async def lifespan(app: FastAPI):
         .token(TELEGRAM_TOKEN)
         .build()
     )
+    logger.info("Telegram Application initialized")
     register_handlers(application)
     set_bot_commands(application)
     # Set the webhook
@@ -82,12 +87,14 @@ async def webhook_handler(request: Request):
 @app.post("/webhook")
 async def webhook(request: Request):
     """Handle webhook updates."""
+    logger.info("Received webhook request")
     try:
         json_data = await request.json()
         update = Update.de_json(json_data, app.state.application.bot)
 
         # Process the update using the Application instance
         await app.state.application.process_update(update)
+        logger.info("Update processed successfully")
         return {"ok": True}
     except Exception as e:
         # Replace with your error logging (e.g., Sentry)

@@ -1,5 +1,5 @@
 import logging
-from telegram.ext import CommandHandler, ContextTypes
+from telegram.ext import CommandHandler, ContextTypes, CallbackContext
 from telegram import Update
 from src.services.user import register_user, switch_role, get_user  # Ensure correct relative import
 from src.services.trip import create_trip, get_trip, list_trips  # Ensure correct relative import
@@ -17,7 +17,7 @@ def register_handlers(application):
     application.add_handler(CommandHandler("admin_status", admin_status_command))
     application.add_handler(CommandHandler("my_id", my_id_command))  # Register new command
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: CallbackContext) -> None:
     try:
         telegram_id = update.effective_user.id
         name = update.effective_user.full_name
