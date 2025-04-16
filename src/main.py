@@ -4,7 +4,7 @@ from telegram import BotCommand, Update
 from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry
 from src.handlers.commands import register_handlers
 from src.database.db import Base, engine
-from sentry_sdk import capture_exception, capture_event
+from sentry_sdk import capture_exception, capture_message
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import sentry_sdk
@@ -34,7 +34,7 @@ async def webhook_handler(request: Request):
     """
     sentry_sdk.set_context("app_state", {"state": str(app.state)})
     if not hasattr(app.state, "application") or app.state.application is None:
-        capture_event("Application not initialized")
+        capture_message("Application not initialized")
         raise RuntimeError("The application is not initialized. Ensure the on_startup function is executed.")
 
     try:
