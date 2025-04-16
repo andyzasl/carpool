@@ -32,7 +32,8 @@ def telegram_webhook():
     try:
         data = request.get_json()
         if application:
-            application.update_queue.put_nowait(Update.de_json(data, application.bot))
+            update = Update.de_json(data, application.bot)
+            application.process_update(update)  # Process the update directly
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         logging.exception("Error in Telegram webhook handler.")
