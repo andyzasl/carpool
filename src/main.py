@@ -32,7 +32,7 @@ def initialize_application():
             .build()
         )
         application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(filters.text & ~filters.command, echo))  # Handle all text messages
+        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))  # Handle all text messages
         logger.info("Application initialized and handlers registered")
         return application
     except Exception as e:
