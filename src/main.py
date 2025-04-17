@@ -32,7 +32,8 @@ def initialize_application():
             .build()
         )
         application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))  # Handle all text messages
+        # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))  # Handle all text messages
+        application.add_handler(MessageHandler(filters.ALL, debug_update))
         logger.info("Application initialized and handlers registered")
         logger.info(f"Registered handlers: {[str(h) for h in application.handlers[0]]}")
         return application
@@ -137,11 +138,15 @@ async def start(update: Update, context: CallbackContext) -> None:
         capture_exception(e)
 
 # Echo handler for all text messages
-async def echo(update: Update, context: CallbackContext) -> None:
-    logger.info(f"Received message: {update.message.text}")
-    try:
-        await update.message.reply_text(f"Echo: {update.message.text}")
-        logger.info("Echo reply sent")
-    except Exception as e:
-        logger.error(f"Failed to send echo reply: {str(e)}")
-        capture_exception(e)
+# async def echo(update: Update, context: CallbackContext) -> None:
+#     logger.info(f"Received message: {update.message.text}")
+#     try:
+#         await update.message.reply_text(f"Echo: {update.message.text}")
+#         logger.info("Echo reply sent")
+#     except Exception as e:
+#         logger.error(f"Failed to send echo reply: {str(e)}")
+#         capture_exception(e)
+
+# Debug handler for all updates
+async def debug_update(update: Update, context: CallbackContext) -> None:
+    logger.info(f"Debug: Received update: {update.to_dict()}")
