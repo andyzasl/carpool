@@ -26,7 +26,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         telegram_id = str(update.effective_user.id)  # Xata uses strings for IDs
         name = update.effective_user.full_name
         # Register user in Xata
-        await xata.db().table("users").upsert({"id": telegram_id, "name": name, "role": "passenger"})
+        await xata.table("users").upsert({"id": telegram_id, "name": name, "role": "passenger"})
         await update.message.reply_text(f"Welcome, {name}! You have been registered as a passenger.")
     except Exception as e:
         with push_scope() as scope:
@@ -39,10 +39,10 @@ async def start(update: Update, context: CallbackContext) -> None:
 async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         telegram_id = str(update.effective_user.id)
-        user = await xata.db().table("users").read(telegram_id)
+        user = await xata.table("users").read(telegram_id)
         if user:
             new_role = "driver" if user["role"] == "passenger" else "passenger"
-            await xata.db().table("users").update(telegram_id, {"role": new_role})
+            await xata.table("users").update(telegram_id, {"role": new_role})
             await update.message.reply_text(f"Your role has been switched to {new_role}.")
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
@@ -57,7 +57,7 @@ async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         telegram_id = str(update.effective_user.id)  # Xata uses strings for IDs
-        user = await xata.db().table("users").read(telegram_id)  # Ensure the user is registered
+        user = await xata.table("users").read(telegram_id)  # Ensure the user is registered
         if user and user["role"] == "driver":
             # Example: Prompt the driver to provide trip details
             await update.message.reply_text(
@@ -74,11 +74,11 @@ async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def get_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         telegram_id = str(update.effective_user.id)
-        user = await xata.db().table("users").read(telegram_id)
+        user = await xata.table("users").read(telegram_id)
         if user:
             if context.args:  # Check if trip ID is provided
                 trip_id = str(context.args[0])
-                trip_details = await xata.db().table("trips").read(trip_id)
+                trip_details = await xata.table("trips").read(trip_id)
                 if trip_details:
                     response = (
                         f"Trip Details:\n"
@@ -106,9 +106,9 @@ async def get_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def list_trips_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         telegram_id = str(update.effective_user.id)
-        user = await xata.db().table("users").read(telegram_id)
+        user = await xata.table("users").read(telegram_id)
         if user:
-            trips = await xata.db().table("trips").get_all()
+            trips = await xata.table("trips").get_all()
             if trips:
                 response = "Available Trips:\n"
                 for trip in trips:
@@ -183,3 +183,4 @@ async def error_handler(update: object, context: CallbackContext) -> None:
         await update.effective_message.reply_text(
             "An unexpected error occurred. Please try again later."
         )
+
