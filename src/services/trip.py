@@ -1,5 +1,4 @@
 from xata.client import XataClient  # Use Xata client for database interactions
-from src.services.user import get_telegram_handler  # Ensure correct relative import
 from src.utils.template_renderer import render_template  # Ensure correct relative import
 from sentry_sdk import capture_exception
 from datetime import datetime

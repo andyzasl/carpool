@@ -4,10 +4,11 @@ from telegram import Update, User as TelegramUser, Message
 from telegram.ext import ContextTypes
 from src.services.user import register_user, switch_role, get_user
 from src.services.trip import create_trip, get_trip
+from src.handlers.commands import start
 
 @pytest.fixture
 def mock_update():
-    user = TelegramUser(id=12345, first_name="Test", is_bot=False)
+    user = TelegramUser(id=12345, first_name="Test User", is_bot=False)
     message = MagicMock(spec=Message)
     message.reply_text = AsyncMock()
     update = MagicMock(spec=Update)
@@ -19,6 +20,7 @@ def mock_update():
 def mock_context():
     return MagicMock(spec=ContextTypes.DEFAULT_TYPE)
 
+@pytest.mark.asyncio
 @patch("src.services.user.register_user")
 async def test_start(mock_register_user, mock_update, mock_context):
     await start(mock_update, mock_context)

@@ -1,34 +1,27 @@
 import pytest
-from src.services.user import register_user, switch_role, get_user
-from src.database.db import SessionLocal
-from src.models.models import User
+from src.services.user import register_user, switch_role, get_user, delete_user
+test_user_telegram_id = "12345"
+test_user_name = "Test User"
 
-@pytest.fixture
-def session():
-    session = SessionLocal()
-    yield session
-    session.close()
+def test_switch_role():
+    register_user(telegram_id=test_user_telegram_id, name=test_user_name)
+    resp = switch_role(telegram_id=test_user_telegram_id, new_role="driver")
+    assert resp.status_code, f"Error: {resp}"
+    user = get_user(test_user_telegram_id)
+    assert user['role'] == "driver", f"User role should be 'driver', but got {user['role']}"
 
-def test_register_user(session):
-    telegram_id = "12345"
-    name = "Test User"
-    user = register_user(telegram_id=telegram_id, name=name, session=session)
-    assert user.telegram_id == telegram_id
-    assert user.name == name
-    assert user.role == "passenger"
 
-def test_switch_role(session):
-    telegram_id = "12345"
-    name = "Test User"
-    user = register_user(telegram_id=telegram_id, name=name, session=session)
-    updated_user = switch_role(user_id=user.id, new_role="driver", session=session)
-    assert updated_user.role == "driver"
-
-def test_get_user(session):
-    telegram_id = "12345"
-    name = "Test User"
-    register_user(telegram_id=telegram_id, name=name, session=session)
-    user = get_user(telegram_id=telegram_id, session=session)
+def test_get_user():
+    register_user(telegram_id=test_user_telegram_id, name=test_user_name)
+    user = get_user(telegram_id=test_user_telegram_id)
     assert user is not None
-    assert user.telegram_id == telegram_id
-    assert user.name == name
+    assert len(user) > 0, "User should exist in the database"
+    assert user['telegram_id'] == test_user_telegram_id, f"Telegram ID should match {user}"
+    assert user['name'] == test_user_name, f"Name should match {user}"
+
+def test_delete_user():
+    user = register_user(telegram_id=test_user_telegram_id, name=test_user_name)
+    resp = delete_user(telegram_id=test_user_telegram_id)
+    assert resp.status_code, f"Error: {resp}"
+    user = get_user(test_user_telegram_id)
+    assert len(user) == 0, f"User should not exist in the database after deletion, but {user}"

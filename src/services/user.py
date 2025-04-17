@@ -1,24 +1,54 @@
 from xata.client import XataClient  # Use Xata client for database interactions
-# Removed SQLAlchemy-related imports
+from sentry_sdk import capture_exception
+
 xata = XataClient()
 
-async def get_user(telegram_id: int):
-    try:
-        return await xata.table("users").filter({"id": telegram_id}).get_first()
-    except Exception as e:
-        capture_exception(e)
-        return None
-
-async def register_user(telegram_id: int, name: str):
-    user = await get_user(telegram_id)
-    if not user:
-        return await xata.table("users").create({"id": telegram_id, "name": name, "role": "passenger"})
+def get_user(telegram_id: int):
+    resp = xata.data().query("users", {
+        "columns": ["name", "role", "telegram_id"], # the columns we want returned
+        "filter": { "telegram_id": telegram_id } # optional filters to apply
+    })
+    # assert resp.is_success(), f"Error: {resp}"
+    # assert len(resp['records']) > 0, f"Error: {resp}"
+    # print(resp)
+    if len(resp['records']) == 0:
+        return []
     else:
-        return await xata.table("users").update(telegram_id, {"name": name})
+        return resp['records'][0]  # Return the first user found
 
-async def switch_role(user_id: str, new_role: str):
-    return await xata.table("users").update(user_id, {"role": new_role})
+def register_user(telegram_id: int, name: str):
+    user = get_user(telegram_id)
+    if len(user) > 0:
+        return user
+    else:
+        # Insert record to table "Avengers" and let Xata generate a record Id
+        record = {
+            "telegram_id": telegram_id,
+            "name": name,
+            "role": "passenger"
+        }
+        resp = xata.records().insert("users", record)
+        print(resp)
 
-def get_telegram_handler(user_id: str):
-    user = xata.db.users.get(user_id)
-    return user["telegram_id"] if user else None
+        # assert resp.is_success(), f"Error: {resp}"
+        return resp
+
+def switch_role(telegram_id: int, new_role: str):
+    user = get_user(telegram_id)
+    record = {
+        "telegram_id": user['telegram_id'],
+        "name": user['name'],
+        "role": new_role
+    }
+    record_id = user['id']
+    resp = xata.records().update("users", record_id, payload=record)
+    #resp = xata.records().update("users", telegram_id, {"role": "driver"})
+    # print(resp)
+    return resp
+
+def delete_user(telegram_id: int):
+    user = get_user(telegram_id)
+    record_id = user['id']
+    resp = xata.records().delete("users", record_id)
+    # assert resp.is_success(), f"Error: {resp}"
+    return resp
