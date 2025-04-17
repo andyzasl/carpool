@@ -20,7 +20,7 @@ def register_handlers(application: Application):
 
 async def start(update: Update, context: CallbackContext) -> None:
     try:
-        telegram_id = update.effective_user.id
+        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
         name = update.effective_user.full_name
         register_user(telegram_id=telegram_id, name=name)  # Ensure no explicit session argument
         await update.message.reply_text(f"Welcome, {name}! You have been registered as a passenger.")
@@ -34,7 +34,7 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_id = update.effective_user.id
+        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
         user = get_user(telegram_id=telegram_id)  # Pass telegram_id
         if user:
             new_role = "driver" if user.role == "passenger" else "passenger"
@@ -52,7 +52,7 @@ async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_id = update.effective_user.id
+        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
         user = get_user(telegram_id=telegram_id)  # Ensure the user is registered
         if user and user.role == "driver":
             # Example: Prompt the driver to provide trip details
@@ -69,7 +69,7 @@ async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def get_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_id = update.effective_user.id
+        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
         user = get_user(telegram_id=telegram_id)  # Ensure the user is registered
         if user:
             if context.args:  # Check if trip ID is provided
@@ -94,7 +94,7 @@ async def get_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def list_trips_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_id = update.effective_user.id
+        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
         user = get_user(telegram_id=telegram_id)  # Ensure the user is registered
         if user:
             trips = list_trips()  # Fetch all trips
@@ -133,7 +133,7 @@ async def admin_status_command(update: Update, context: ContextTypes.DEFAULT_TYP
     Provide a full database status for admin users.
     """
     try:
-        telegram_id = update.effective_user.id
+        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
         if telegram_id in ADMIN_IDS:  # Check if the user's Telegram ID is in ADMIN_IDS
             status = get_full_status()  # Fetch full database status
             await update.message.reply_text(f"Status:\n{status}")
@@ -148,7 +148,7 @@ async def my_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Respond with the user's Telegram ID.
     """
     try:
-        telegram_id = update.effective_user.id
+        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
         await update.message.reply_text(f"Your Telegram ID is: {telegram_id}")
     except Exception as e:
         capture_exception(e)  # Send exception details to Sentry
@@ -168,3 +168,4 @@ async def error_handler(update: object, context: CallbackContext) -> None:
         await update.effective_message.reply_text(
             "An unexpected error occurred. Please try again later."
         )
+

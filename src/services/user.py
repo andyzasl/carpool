@@ -20,8 +20,8 @@ def with_session(func):
     return wrapper
 
 @with_session
-def get_user(session: Session, telegram_id: str):
-    user = session.query(User).filter_by(telegram_id=telegram_id).first()
+def get_user(session: Session, telegram_id: int):
+    user = session.query(User).filter(User.telegram_id == telegram_id).first()
     if user:
         # Access attributes to ensure they are loaded before the session is closed
         user.id, user.role
@@ -29,19 +29,19 @@ def get_user(session: Session, telegram_id: str):
     return user
 
 @with_session
-def register_user(telegram_id: str, name: str, session: Session = None):
+def register_user(telegram_id: int, name: str, session: Session = None):
     """
     Register a new user or update the name if the user already exists.
 
     Args:
-        telegram_id (str): Telegram ID of the user.
+        telegram_id (int): Telegram ID of the user.
         name (str): Full name of the user.
         session (Session): SQLAlchemy session (injected by the decorator).
 
     Returns:
         User: The registered or updated user.
     """
-    user = session.query(User).filter_by(telegram_id=telegram_id).first()
+    user = get_user(session=session, telegram_id=telegram_id)
     if not user:
         user = User(telegram_id=telegram_id, name=name, role="passenger")
         session.add(user)
@@ -83,4 +83,3 @@ def get_telegram_handler(session: Session, user_id: int):
     """
     user = session.query(User).filter_by(id=user_id).first()
     return user.telegram_id if user else None
-
