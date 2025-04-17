@@ -76,7 +76,7 @@ async def webhook(request: Request):
     logger.info("Received webhook request")
     try:
         if not application:
-            await initialize_application()
+            initialize_application()
             logger.info("Application was re-initialized")
             # raise HTTPException(status_code=500, detail="Application not initialized")
 
