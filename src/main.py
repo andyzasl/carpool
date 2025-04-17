@@ -6,7 +6,10 @@ from contextlib import asynccontextmanager
 import logging
 import os
 import asyncio
-from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry, DATABASE_URL
+from src.models.models import Base
 from src.handlers.commands import register_handlers
 
 # Set up logging
@@ -21,6 +24,10 @@ setup_sentry()
 
 # Global Application instance
 application = None
+
+# Database setup
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def initialize_application():
     """Initialize the Telegram Application and register handlers."""
@@ -57,6 +64,12 @@ async def lifespan(app: FastAPI):
     global application
     logger.info("Starting lifespan handler")
     try:
+        # Initialize the database
+        logger.info("Initializing database")
+        engine = create_engine(DATABASE_URL)
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database initialized successfully")
+
         # Initialize the Telegram bot application
         initialize_application()
 
@@ -161,5 +174,6 @@ async def echo(update: Update, context: CallbackContext) -> None:
 # Debug handler for all updates
 async def debug_update(update: Update, context: CallbackContext) -> None:
     logger.debug(f"Debug: Received update: {update.to_dict()}")
+
 
 
