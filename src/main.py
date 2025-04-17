@@ -28,7 +28,7 @@ application = None
 xata = XataClient(
     api_key=os.getenv("XATA_API_KEY"),
     db_name=os.getenv("XATA_DB_NAME")
-)
+    )
 
 def initialize_application():
     """Initialize the Telegram Application and register handlers."""
@@ -139,17 +139,6 @@ async def webhook(request: Request):
             capture_exception(e)
         logger.error(f"Error in webhook: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
-# Command handler
-async def start(update: Update, context: CallbackContext) -> None:
-    logger.info("Processing /start command")
-    logger.info(f"Update details: {update.to_dict()}")
-    try:
-        await update.message.reply_text("Hello! I'm your bot.")
-        logger.info("Reply sent successfully")
-    except Exception as e:
-        logger.error(f"Failed to send reply: {str(e)}")
-        capture_exception(e)
 
 # Echo handler for all text messages
 async def echo(update: Update, context: CallbackContext) -> None:

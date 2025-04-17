@@ -35,7 +35,7 @@ async def start(update: Update, context: CallbackContext) -> None:
             scope.set_extra("user_id", update.effective_user.id)
             scope.set_extra("error_message", str(e))
             capture_exception(e)  # Send exception details to Sentry
-        await update.message.reply_text("An error occurred. Please try again later.")
+        await update.message.reply_text(f"An error occurred. Please try again later., error {e}")
 
 async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
