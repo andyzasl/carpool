@@ -108,44 +108,11 @@ async def webhook(request: Request):
 
         logger.info("Update seems to be ok")
         logger.info(f"Parsed update: {update.to_dict()}")
-        # Test direct response
-        if update.message and update.message.chat_id:
-            try:
-                await application.bot.send_message(
-                    chat_id=update.message.chat_id,
-                    text="Test response from webhook"
-                )
-                logger.info("Test response sent directly")
-            except Exception as e:
-                logger.error(f"Failed to send test response: {str(e)}")
-                capture_exception(e)
-
-        # # Manual dispatch (temporary fallback)
-        # logger.info("Manually dispatching update to handlers")
-        # try:
-        #     if update.message:
-        #         context = CallbackContext(application)
-        #         if update.message.text and update.message.text.startswith("/start"):
-        #             await start(update, context)
-        #         elif update.message.text:
-        #             await echo(update, context)
-        #         logger.info("Manual dispatch completed")
-        #     else:
-        #         logger.warning("No message in update, skipping manual dispatch")
-        # except Exception as e:
-        #     logger.error(f"Error in manual dispatch: {str(e)}")
-        #     capture_exception(e)
 
         # Attempt process_update with state check
         logger.info("Checking application state before process_update")
         try:
-            # Reinitialize if necessary (temporary workaround)
-            if not hasattr(application, '_initialized') or not application._initialized:
-                logger.warning("Application not initialized, reinitializing")
-                await application.initialize()
-                logger.info("Application reinitialized")
-
-            logger.info("Dispatching update to handlers via process_update")
+            await application.initialize()
             await application.process_update(update)
             logger.info("Update processed successfully")
         except Exception as e:
@@ -153,7 +120,6 @@ async def webhook(request: Request):
             capture_exception(e)
             # Continue to return {"ok": True} since manual dispatch worked
             logger.warning("Falling back to manual dispatch due to process_update error")
-
         return {"ok": True}
     except Exception as e:
         logger.error(f"Error in webhook: {str(e)}")
@@ -183,4 +149,4 @@ async def echo(update: Update, context: CallbackContext) -> None:
 
 # Debug handler for all updates
 async def debug_update(update: Update, context: CallbackContext) -> None:
-    logger.info(f"Debug: Received update: {update.to_dict()}")
+    logger.debug(f"Debug: Received update: {update.to_dict()}")
