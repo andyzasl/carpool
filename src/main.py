@@ -107,7 +107,6 @@ async def webhook(request: Request):
     logger.info("Received webhook request")
     try:
         if not application:
-            logger.error("Application not initialized")
             initialize_application()
 
         json_data = await request.json()

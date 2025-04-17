@@ -28,7 +28,7 @@ def register_user(telegram_id: int, name: str):
             "role": "passenger"
         }
         resp = xata.records().insert("users", record)
-        print(resp)
+        # print(resp)
 
         # assert resp.is_success(), f"Error: {resp}"
         return resp
