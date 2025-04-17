@@ -97,7 +97,7 @@ async def webhook(request: Request):
     try:
         if not application:
             logger.error("Application not initialized")
-            raise HTTPException(status_code=500, detail="Application not initialized")
+            initialize_application()
 
         json_data = await request.json()
         logger.info(f"Raw update JSON: {json_data}")
