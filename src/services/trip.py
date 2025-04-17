@@ -4,7 +4,7 @@ from sentry_sdk import capture_exception
 from datetime import datetime
 from httpx import Timeout  # Import Timeout for setting request timeouts
 
-xata = XataClient(timeout=Timeout(5.0))  # Initialize Xata client with a 5-second timeout
+xata = XataClient()  # Initialize Xata client with a 5-second timeout
 
 async def create_trip(driver_id: str, seats: int, pickup_points: list):
     """

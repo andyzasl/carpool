@@ -2,7 +2,7 @@ from xata.client import XataClient  # Use Xata client for database interactions
 from sentry_sdk import capture_exception
 from httpx import Timeout  # Import Timeout for setting request timeouts
 
-xata = XataClient(timeout=Timeout(5.0))  # Initialize Xata client with a 5-second timeout
+xata = XataClient()  # Initialize Xata client with a 5-second timeout
 
 def get_user(telegram_id: int):
     resp = xata.data().query("users", {

@@ -27,8 +27,7 @@ application = None
 # Initialize Xata client with the correct workspace, database, and timeout
 xata = XataClient(
     api_key=os.getenv("XATA_API_KEY"),
-    db_name=os.getenv("XATA_DB_NAME"),
-    timeout=Timeout(5.0)  # Set timeout to 5 seconds
+    db_name=os.getenv("XATA_DB_NAME")
 )
 
 def initialize_application():

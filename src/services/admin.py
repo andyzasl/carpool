@@ -2,7 +2,7 @@ from sentry_sdk import capture_exception  # Import Sentry's exception capture fu
 from xata.client import XataClient  # Ensure Xata client is imported
 from httpx import Timeout  # Import Timeout for setting request timeouts
 
-xata = XataClient(timeout=Timeout(5.0))  # Initialize Xata client with a 5-second timeout
+xata = XataClient()  # Initialize Xata client with a 5-second timeout
 
 async def get_full_status():
     try:
