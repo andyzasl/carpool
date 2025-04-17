@@ -21,9 +21,10 @@ logging.basicConfig(level=logging.INFO)
 
 def setup_sentry():
     sentry_logging = LoggingIntegration(
-        level=logging.INFO,
-        event_level=logging.INFO
+        level=logging.WARN,
+        event_level=logging.WARN
     )
+    sentry_sdk.set_level("warning")
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[sentry_logging, SqlalchemyIntegration(), AsyncioIntegration()],
