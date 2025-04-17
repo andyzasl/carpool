@@ -4,7 +4,7 @@ xata = XataClient()
 
 async def get_user(telegram_id: int):
     try:
-        return await xata.db().table("users").filter({"id": telegram_id}).get_first()
+        return await xata.table("users").filter({"id": telegram_id}).get_first()
     except Exception as e:
         capture_exception(e)
         return None
@@ -12,12 +12,12 @@ async def get_user(telegram_id: int):
 async def register_user(telegram_id: int, name: str):
     user = await get_user(telegram_id)
     if not user:
-        return await xata.db().table("users").create({"id": telegram_id, "name": name, "role": "passenger"})
+        return await xata.table("users").create({"id": telegram_id, "name": name, "role": "passenger"})
     else:
-        return await xata.db().table("users").update(telegram_id, {"name": name})
+        return await xata.table("users").update(telegram_id, {"name": name})
 
 async def switch_role(user_id: str, new_role: str):
-    return await xata.db().table("users").update(user_id, {"role": new_role})
+    return await xata.table("users").update(user_id, {"role": new_role})
 
 def get_telegram_handler(user_id: str):
     user = xata.db.users.get(user_id)

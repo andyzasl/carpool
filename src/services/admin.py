@@ -2,9 +2,9 @@ from sentry_sdk import capture_exception  # Import Sentry's exception capture fu
 
 async def get_full_status():
     try:
-        users = await xata.db().table("users").get_all()
-        trips = await xata.db().table("trips").get_all()
-        pickup_points = await xata.db().table("pickup_points").get_all()
+        users = await xata.table("users").get_all()
+        trips = await xata.table("trips").get_all()
+        pickup_points = await xata.table("pickup_points").get_all()
 
         status = "Database Status:\n\n"
         status += "Users:\n" + "\n".join([f"ID: {user['id']}, Name: {user['name']}, Role: {user['role']}" for user in users]) + "\n\n"

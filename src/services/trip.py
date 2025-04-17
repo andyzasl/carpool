@@ -18,7 +18,7 @@ async def create_trip(driver_id: str, seats: int, pickup_points: list):
             "pickup_points": pickup_points,
             "created_at": datetime.utcnow().isoformat(),
         }
-        trip = await xata.db().table("trips").create(trip_data)
+        trip = await xata.table("trips").create(trip_data)
         return trip["id"]
     except Exception as e:
         capture_exception(e)
@@ -29,7 +29,7 @@ async def list_trips():
     List all trips from the database.
     """
     try:
-        trips = await xata.db().table("trips").get_all()
+        trips = await xata.table("trips").get_all()
         return [
             {
                 "id": trip["id"],
@@ -48,7 +48,7 @@ async def get_trip(trip_id: str):
     Retrieve details of a specific trip by ID.
     """
     try:
-        trip = await xata.db().table("trips").read(trip_id)
+        trip = await xata.table("trips").read(trip_id)
         if trip:
             trip_details = {
                 "id": trip["id"],
