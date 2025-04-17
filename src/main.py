@@ -34,6 +34,7 @@ def initialize_application():
         application.add_handler(CommandHandler("start", start))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))  # Handle all text messages
         logger.info("Application initialized and handlers registered")
+        logger.info(f"Registered handlers: {[str(h) for h in application.handlers[0]]}")
         return application
     except Exception as e:
         logger.error(f"Failed to initialize Application: {str(e)}")
@@ -100,9 +101,23 @@ async def webhook(request: Request):
             except Exception as e:
                 logger.error(f"Failed to send test response: {str(e)}")
                 capture_exception(e)
-
-        # Run process_update in a thread to avoid blocking
-        await asyncio.get_event_loop().run_in_executor(None, application.process_update, update)
+        # Manually dispatch to handlers for testing
+        logger.info("Manually dispatching update to handlers")
+        try:
+            if update.message:
+                context = CallbackContext(application)
+                if update.message.text and update.message.text.startswith("/start"):
+                    await start(update, context)
+                elif update.message.text:
+                    await echo(update, context)
+                logger.info("Manual dispatch completed")
+            else:
+                logger.warning("No message in update, skipping manual dispatch")
+        except Exception as e:
+            logger.error(f"Error in manual dispatch: {str(e)}")
+            capture_exception(e)
+        logger.info("Dispatching update to handlers")
+        await application.process_update(update)  # Use async process_update
         logger.info("Update processed successfully")
         return {"ok": True}
     except Exception as e:
