@@ -7,6 +7,7 @@ import logging
 import os
 import asyncio
 from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry
+from src.handlers.commands import register_handlers
 
 # Set up logging
 logging.basicConfig(
@@ -35,9 +36,11 @@ def initialize_application():
             .token(TELEGRAM_TOKEN)
             .build()
         )
-        application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-        application.add_handler(MessageHandler(filters.ALL, debug_update))
+        # application.add_handler(CommandHandler("start", start))
+        # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+        # application.add_handler(MessageHandler(filters.ALL, debug_update))
+        register_handlers(application)
+        
         logger.info("Handlers registered")
         logger.info(f"Registered handlers: {[str(h) for h in application.handlers[0]]}")
         return application
