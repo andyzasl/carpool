@@ -2,7 +2,6 @@ import os
 import logging
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
-from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 
@@ -13,7 +12,7 @@ DATABASE_URL = XATA_DATABASE_URL or os.getenv("DATABASE_URL", "sqlite:///carpool
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 try:
-    ADMIN_IDS = list(map(int, filter(None, os.getenv("ADMIN_IDS", "").split(","))))
+    ADMIN_IDS = list(map(str, filter(None, os.getenv("ADMIN_IDS", "").split(","))))
 except ValueError:
     ADMIN_IDS = []
 
@@ -27,7 +26,7 @@ def setup_sentry():
     sentry_sdk.set_level("warning")
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        integrations=[sentry_logging, SqlalchemyIntegration(), AsyncioIntegration()],
+        integrations=[sentry_logging, AsyncioIntegration()],
         traces_sample_rate=1.0,
     )
 
@@ -37,3 +36,4 @@ def setup_sentry():
         "vercel_url": os.getenv("VERCEL_URL"),
     }
     sentry_sdk.set_context("vercel_runtime", vercel_context)
+

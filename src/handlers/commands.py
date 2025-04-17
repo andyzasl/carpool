@@ -6,6 +6,9 @@ from src.services.trip import create_trip, get_trip, list_trips  # Ensure correc
 from src.services.admin import get_full_status  # Ensure correct relative import
 from src.config.config import ADMIN_IDS
 from sentry_sdk import capture_exception, push_scope  # Import Sentry's exception capture function and push_scope
+from xata.client import XataClient  # Ensure Xata client is used
+
+xata = XataClient()  # Initialize Xata client
 
 def register_handlers(application: Application):
     application.add_handler(CommandHandler("start", start))
@@ -20,9 +23,10 @@ def register_handlers(application: Application):
 
 async def start(update: Update, context: CallbackContext) -> None:
     try:
-        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
+        telegram_id = str(update.effective_user.id)  # Xata uses strings for IDs
         name = update.effective_user.full_name
-        register_user(telegram_id=telegram_id, name=name)  # Ensure no explicit session argument
+        # Register user in Xata
+        await xata.db.users.create_or_update(telegram_id, {"name": name, "role": "passenger"})
         await update.message.reply_text(f"Welcome, {name}! You have been registered as a passenger.")
     except Exception as e:
         with push_scope() as scope:
@@ -34,11 +38,11 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
-        user = get_user(telegram_id=telegram_id)  # Pass telegram_id
+        telegram_id = str(update.effective_user.id)
+        user = await xata.db.users.get(telegram_id)
         if user:
-            new_role = "driver" if user.role == "passenger" else "passenger"
-            switch_role(user_id=user.id, new_role=new_role)
+            new_role = "driver" if user["role"] == "passenger" else "passenger"
+            await xata.db.users.update(telegram_id, {"role": new_role})
             await update.message.reply_text(f"Your role has been switched to {new_role}.")
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
@@ -52,9 +56,9 @@ async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
-        user = get_user(telegram_id=telegram_id)  # Ensure the user is registered
-        if user and user.role == "driver":
+        telegram_id = str(update.effective_user.id)  # Xata uses strings for IDs
+        user = await xata.db.users.get(telegram_id)  # Ensure the user is registered
+        if user and user["role"] == "driver":
             # Example: Prompt the driver to provide trip details
             await update.message.reply_text(
                 "Please provide trip details (e.g., seats and pickup points)."
@@ -69,16 +73,23 @@ async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def get_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
-        user = get_user(telegram_id=telegram_id)  # Ensure the user is registered
+        telegram_id = str(update.effective_user.id)
+        user = await xata.db.users.get(telegram_id)
         if user:
             if context.args:  # Check if trip ID is provided
-                trip_id = int(context.args[0])
-                trip_details = get_trip(trip_id=trip_id)
+                trip_id = str(context.args[0])
+                trip_details = await xata.db.trips.get(trip_id)
                 if trip_details:
-                    response = f"Trip Details:\nID: {trip_details['id']}\nDriver: {trip_details['driver_handler']}\nStatus: {trip_details['status']}\nCreated At: {trip_details['created_at']}\nPickup Points:\n"
-                    for point in trip_details["pickup_points"]:
-                        response += f"- {point['address']} at {point['time']}\n"
+                    response = (
+                        f"Trip Details:\n"
+                        f"ID: {trip_details['id']}\n"
+                        f"Driver: {trip_details.get('driver_handler', 'N/A')}\n"
+                        f"Status: {trip_details.get('status', 'N/A')}\n"
+                        f"Created At: {trip_details.get('created_at', 'N/A')}\n"
+                        f"Pickup Points:\n"
+                    )
+                    for point in trip_details.get("pickup_points", []):
+                        response += f"- {point.get('address', 'Unknown')} at {point.get('time', 'Unknown')}\n"
                     await update.message.reply_text(response)
                 else:
                     await update.message.reply_text("Trip not found.")
@@ -89,26 +100,30 @@ async def get_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("Invalid trip ID. Please provide a valid number.")
     except Exception as e:
-        capture_exception(e)  # Send exception details to Sentry
+        capture_exception(e)
         await update.message.reply_text("An error occurred while retrieving the trip. Please try again.")
 
 async def list_trips_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
-        user = get_user(telegram_id=telegram_id)  # Ensure the user is registered
+        telegram_id = str(update.effective_user.id)
+        user = await xata.db.users.get(telegram_id)
         if user:
-            trips = list_trips()  # Fetch all trips
+            trips = await xata.db.trips.get_all()
             if trips:
                 response = "Available Trips:\n"
                 for trip in trips:
-                    response += f"- Trip ID: {trip['id']}, Driver ID: {trip['driver_id']}, Status: {trip['status']}\n"
+                    response += (
+                        f"- Trip ID: {trip.get('id', 'Unknown')}, "
+                        f"Driver ID: {trip.get('driver_id', 'Unknown')}, "
+                        f"Status: {trip.get('status', 'Unknown')}\n"
+                    )
                 await update.message.reply_text(response)
             else:
                 await update.message.reply_text("No trips are currently available.")
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
     except Exception as e:
-        capture_exception(e)  # Send exception details to Sentry
+        capture_exception(e)
         await update.message.reply_text("An error occurred while listing trips. Please try again.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -133,9 +148,9 @@ async def admin_status_command(update: Update, context: ContextTypes.DEFAULT_TYP
     Provide a full database status for admin users.
     """
     try:
-        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
+        telegram_id = str(update.effective_user.id)  # Xata uses strings for IDs
         if telegram_id in ADMIN_IDS:  # Check if the user's Telegram ID is in ADMIN_IDS
-            status = get_full_status()  # Fetch full database status
+            status = await xata.db.status.get_full()  # Fetch full database status
             await update.message.reply_text(f"Status:\n{status}")
         else:
             await update.message.reply_text("You do not have permission to access this command.")
@@ -148,7 +163,7 @@ async def my_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Respond with the user's Telegram ID.
     """
     try:
-        telegram_id = int(update.effective_user.id)  # Ensure telegram_id is an Integer
+        telegram_id = str(update.effective_user.id)  # Xata uses strings for IDs
         await update.message.reply_text(f"Your Telegram ID is: {telegram_id}")
     except Exception as e:
         capture_exception(e)  # Send exception details to Sentry
