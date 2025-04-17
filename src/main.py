@@ -64,6 +64,10 @@ async def lifespan(app: FastAPI):
             logger.error("Application initialization failed")
             raise ValueError("Application not initialized")
 
+        # Use a new event loop if the current one is closed
+        if asyncio.get_event_loop().is_closed():
+            asyncio.set_event_loop(asyncio.new_event_loop())
+
         # Initialize the application
         logger.info("Calling application.initialize()")
         await application.initialize()
@@ -161,4 +165,5 @@ async def echo(update: Update, context: CallbackContext) -> None:
 # Debug handler for all updates
 async def debug_update(update: Update, context: CallbackContext) -> None:
     logger.debug(f"Debug: Received update: {update.to_dict()}")
+
 
