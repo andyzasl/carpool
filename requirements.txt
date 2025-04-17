@@ -1,8 +1,7 @@
 python-telegram-bot[webhooks]==22.*
 sentry-sdk==2.*
-python-dotenv==1.*
+python-dotenv>=0.21.0,<2.0.0
 pytest==8.*
 fastapi==0.115.*
 mangum==0.19.*
 xata==0.8.*
-# Removed sqlalchemy and alembic
