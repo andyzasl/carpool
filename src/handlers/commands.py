@@ -7,8 +7,9 @@ from src.services.admin import get_full_status  # Ensure correct relative import
 from src.config.config import ADMIN_IDS
 from sentry_sdk import capture_exception, push_scope  # Import Sentry's exception capture function and push_scope
 from xata.client import XataClient  # Ensure Xata client is used
+from httpx import Timeout  # Import Timeout for setting request timeouts
 
-xata = XataClient()  # Initialize Xata client
+xata = XataClient(timeout=Timeout(5.0))  # Initialize Xata client with a 5-second timeout
 
 def register_handlers(application: Application):
     application.add_handler(CommandHandler("start", start))
@@ -183,3 +184,4 @@ async def error_handler(update: object, context: CallbackContext) -> None:
         await update.effective_message.reply_text(
             "An unexpected error occurred. Please try again later."
         )
+

@@ -2,8 +2,9 @@ from xata.client import XataClient  # Use Xata client for database interactions
 from src.utils.template_renderer import render_template  # Ensure correct relative import
 from sentry_sdk import capture_exception
 from datetime import datetime
+from httpx import Timeout  # Import Timeout for setting request timeouts
 
-xata = XataClient()
+xata = XataClient(timeout=Timeout(5.0))  # Initialize Xata client with a 5-second timeout
 
 async def create_trip(driver_id: str, seats: int, pickup_points: list):
     """
@@ -65,4 +66,3 @@ async def get_trip(trip_id: str):
     except Exception as e:
         capture_exception(e)
         return None
-

@@ -9,6 +9,7 @@ import asyncio
 from xata.client import XataClient  # Import Xata client
 from src.config.config import ADMIN_IDS, TELEGRAM_TOKEN, WEBHOOK_URL, setup_sentry
 from src.handlers.commands import register_handlers
+from httpx import Timeout  # Import Timeout for setting request timeouts
 
 # Set up logging
 logging.basicConfig(
@@ -23,8 +24,12 @@ setup_sentry()
 # Global Application instance
 application = None
 
-# Initialize Xata client with the correct workspace and database
-xata = XataClient(api_key=os.getenv("XATA_API_KEY"), db_name=os.getenv("XATA_DB_NAME"))
+# Initialize Xata client with the correct workspace, database, and timeout
+xata = XataClient(
+    api_key=os.getenv("XATA_API_KEY"),
+    db_name=os.getenv("XATA_DB_NAME"),
+    timeout=Timeout(5.0)  # Set timeout to 5 seconds
+)
 
 def initialize_application():
     """Initialize the Telegram Application and register handlers."""
@@ -38,6 +43,7 @@ def initialize_application():
         application = (
             Application.builder()
             .token(TELEGRAM_TOKEN)
+            .request_timeout(5.0)  # Set timeout to 5 seconds for Telegram bot
             .build()
         )
         register_handlers(application)
