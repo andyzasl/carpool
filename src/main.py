@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from sentry_sdk import capture_exception
 from telegram import Update
-from telegram.ext import Application, CallbackContext, CommandHandler, MessageHandler, Filters
+from telegram.ext import Application, CallbackContext, CommandHandler, MessageHandler, filters
 from contextlib import asynccontextmanager
 import logging
 import os
@@ -32,7 +32,7 @@ def initialize_application():
             .build()
         )
         application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))  # Handle all text messages
+        application.add_handler(MessageHandler(filters.text & ~filters.command, echo))  # Handle all text messages
         logger.info("Application initialized and handlers registered")
         return application
     except Exception as e:
