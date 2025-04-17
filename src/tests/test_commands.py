@@ -20,12 +20,11 @@ def mock_update():
 def mock_context():
     return MagicMock(spec=ContextTypes.DEFAULT_TYPE)
 
-@pytest.mark.asyncio
-@patch("src.services.user.register_user")
-async def test_start(mock_register_user, mock_update, mock_context):
-    await start(mock_update, mock_context)
-    mock_register_user.assert_called_once_with(telegram_id=12345, name="Test")
-    mock_update.message.reply_text.assert_called_once_with("Welcome, Test! You have been registered as a passenger.")
+# @patch("src.services.user.register_user")
+def test_start():
+    start(mock_update, mock_context)
+    register_user.assert_called_once_with(telegram_id=12345, name="Test User")
+    mock_update.message.reply_text.assert_called_once_with("Welcome, Test User! You have been registered as a passenger.")
 
 @patch("src.services.user.get_user")
 @patch("src.services.user.switch_role")

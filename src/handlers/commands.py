@@ -5,9 +5,10 @@ from src.services.user import register_user, switch_role, get_user  # Ensure cor
 from src.services.trip import create_trip, get_trip, list_trips  # Ensure correct relative import
 from src.services.admin import get_full_status  # Ensure correct relative import
 from src.config.config import ADMIN_IDS
-from sentry_sdk import capture_exception, push_scope  # Import Sentry's exception capture function and push_scope
+from sentry_sdk import capture_exception, new_scope  # Import Sentry's exception capture function and push_scope
 from xata.client import XataClient  # Ensure Xata client is used
 from httpx import Timeout  # Import Timeout for setting request timeouts
+from pprint import pprint
 
 xata = XataClient()  # Initialize Xata client with a 5-second timeout
 
@@ -24,13 +25,14 @@ def register_handlers(application: Application):
 
 async def start(update: Update, context: CallbackContext) -> None:
     try:
+        pprint(update)
         telegram_id = str(update.effective_user.id)  # Xata uses strings for IDs
         name = update.effective_user.full_name
         # Register user in Xata
         xata.records().upsert(table_name="users", record_id=str(telegram_id) , payload={"name": name, "telegram_id": telegram_id, "role": "passenger"})
         await update.message.reply_text(f"Welcome, {name}! You have been registered as a passenger.")
     except Exception as e:
-        with push_scope() as scope:
+        with new_scope() as scope:
             scope.set_tag("command", "/start")
             scope.set_extra("user_id", update.effective_user.id)
             scope.set_extra("error_message", str(e))
@@ -48,7 +50,7 @@ async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
     except Exception as e:
-        with push_scope() as scope:
+        with new_scope() as scope:
             scope.set_tag("command", "/switch_role")
             scope.set_extra("user_id", update.effective_user.id)
             scope.set_extra("error_message", str(e))
@@ -175,7 +177,7 @@ async def error_handler(update: object, context: CallbackContext) -> None:
     Log the error and send a message to the user.
     """
     logging.error(f"Exception while handling an update: {context.error}")
-    with push_scope() as scope:
+    with new_scope() as scope:
         scope.set_tag("handler", "error_handler")
         scope.set_extra("update", update.to_dict() if isinstance(update, Update) else str(update))
         scope.set_extra("error_message", str(context.error))
