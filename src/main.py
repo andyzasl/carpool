@@ -60,10 +60,6 @@ async def lifespan(app: FastAPI):
         # Initialize the Telegram bot application
         initialize_application()
 
-        if not application:
-            logger.error("Application initialization failed")
-            raise ValueError("Application not initialized")
-
         # Use a new event loop if the current one is closed
         if asyncio.get_event_loop().is_closed():
             asyncio.set_event_loop(asyncio.new_event_loop())
