@@ -89,6 +89,18 @@ async def webhook(request: Request):
 
         logger.info("Update seems to be ok")
         logger.info(f"Parsed update: {update.to_dict()}")
+
+        if update.message and update.message.chat_id:
+            try:
+                await application.bot.send_message(
+                    chat_id=update.message.chat_id,
+                    text="Test response from webhook"
+                )
+                logger.info("Test response sent directly")
+            except Exception as e:
+                logger.error(f"Failed to send test response: {str(e)}")
+                capture_exception(e)
+
         # Run process_update in a thread to avoid blocking
         await asyncio.get_event_loop().run_in_executor(None, application.process_update, update)
         logger.info("Update processed successfully")
