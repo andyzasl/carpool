@@ -26,7 +26,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         telegram_id = str(update.effective_user.id)  # Xata uses strings for IDs
         name = update.effective_user.full_name
         # Register user in Xata
-        await xata.table("users").upsert({"id": telegram_id, "name": name, "role": "passenger"})
+        await xata.records().upsert(table_name="users", payload={"id": telegram_id, "name": name, "role": "passenger"})
         await update.message.reply_text(f"Welcome, {name}! You have been registered as a passenger.")
     except Exception as e:
         with push_scope() as scope:
