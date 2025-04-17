@@ -120,21 +120,21 @@ async def webhook(request: Request):
                 logger.error(f"Failed to send test response: {str(e)}")
                 capture_exception(e)
 
-        # Manual dispatch (temporary fallback)
-        logger.info("Manually dispatching update to handlers")
-        try:
-            if update.message:
-                context = CallbackContext(application)
-                if update.message.text and update.message.text.startswith("/start"):
-                    await start(update, context)
-                elif update.message.text:
-                    await echo(update, context)
-                logger.info("Manual dispatch completed")
-            else:
-                logger.warning("No message in update, skipping manual dispatch")
-        except Exception as e:
-            logger.error(f"Error in manual dispatch: {str(e)}")
-            capture_exception(e)
+        # # Manual dispatch (temporary fallback)
+        # logger.info("Manually dispatching update to handlers")
+        # try:
+        #     if update.message:
+        #         context = CallbackContext(application)
+        #         if update.message.text and update.message.text.startswith("/start"):
+        #             await start(update, context)
+        #         elif update.message.text:
+        #             await echo(update, context)
+        #         logger.info("Manual dispatch completed")
+        #     else:
+        #         logger.warning("No message in update, skipping manual dispatch")
+        # except Exception as e:
+        #     logger.error(f"Error in manual dispatch: {str(e)}")
+        #     capture_exception(e)
 
         # Attempt process_update with state check
         logger.info("Checking application state before process_update")
