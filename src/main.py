@@ -23,8 +23,8 @@ setup_sentry()
 # Global Application instance
 application = None
 
-# Initialize Xata client
-xata = XataClient()
+# Initialize Xata client with the correct workspace and database
+xata = XataClient(api_key=os.getenv("XATA_API_KEY"), db_name=os.getenv("XATA_DB_NAME"))
 
 def initialize_application():
     """Initialize the Telegram Application and register handlers."""
@@ -161,4 +161,6 @@ async def echo(update: Update, context: CallbackContext) -> None:
 # Debug handler for all updates
 async def debug_update(update: Update, context: CallbackContext) -> None:
     logger.debug(f"Debug: Received update: {update.to_dict()}")
+
+
 
