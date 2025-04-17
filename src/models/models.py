@@ -9,7 +9,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    telegram_id = Column(String, unique=True, nullable=False)
+    telegram_id = Column(Integer, unique=True, nullable=False)  # Changed to Integer
     role = Column(String, nullable=False)
 
 

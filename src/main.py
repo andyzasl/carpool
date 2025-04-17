@@ -40,7 +40,7 @@ def initialize_application():
         # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
         # application.add_handler(MessageHandler(filters.ALL, debug_update))
         register_handlers(application)
-        
+
         logger.info("Handlers registered")
         logger.info(f"Registered handlers: {[str(h) for h in application.handlers[0]]}")
         return application
