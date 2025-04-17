@@ -42,7 +42,6 @@ def initialize_application():
         application = (
             Application.builder()
             .token(TELEGRAM_TOKEN)
-            .request_timeout(5.0)  # Set timeout to 5 seconds for Telegram bot
             .build()
         )
         register_handlers(application)
