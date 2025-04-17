@@ -88,7 +88,7 @@ async def webhook(request: Request):
 
         logger.info("Update seems to be ok")
         # Process the update
-        await application.process_update(update)
+        application.process_update(update)
         logger.info("Update processed successfully")
         return {"ok": True}
     except Exception as e:
