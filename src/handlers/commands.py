@@ -42,7 +42,7 @@ async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         user = await xata.table("users").read(telegram_id)
         if user:
             new_role = "driver" if user["role"] == "passenger" else "passenger"
-            await xata.table("users").update(telegram_id, {"role": new_role})
+            await xata.table("users").update({"id": telegram_id, "role": new_role})
             await update.message.reply_text(f"Your role has been switched to {new_role}.")
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
@@ -183,4 +183,3 @@ async def error_handler(update: object, context: CallbackContext) -> None:
         await update.effective_message.reply_text(
             "An unexpected error occurred. Please try again later."
         )
-
