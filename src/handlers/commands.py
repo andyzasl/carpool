@@ -1,13 +1,13 @@
 import logging
-from telegram.ext import CommandHandler, ContextTypes, CallbackContext
+from telegram.ext import CommandHandler, ContextTypes, CallbackContext, Application
 from telegram import Update
 from src.services.user import register_user, switch_role, get_user  # Ensure correct relative import
 from src.services.trip import create_trip, get_trip, list_trips  # Ensure correct relative import
 from src.services.admin import get_full_status  # Ensure correct relative import
 from src.config.config import ADMIN_IDS
-from sentry_sdk import capture_exception  # Import Sentry's exception capture function
+from sentry_sdk import capture_exception, push_scope  # Import Sentry's exception capture function and push_scope
 
-def register_handlers(application):
+def register_handlers(application: Application):
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("switch_role", switch_role_command))
     application.add_handler(CommandHandler("create_trip", create_trip_command))
@@ -16,6 +16,7 @@ def register_handlers(application):
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("admin_status", admin_status_command))
     application.add_handler(CommandHandler("my_id", my_id_command))  # Register new command
+    application.add_error_handler(error_handler)  # Register the error handler
 
 async def start(update: Update, context: CallbackContext) -> None:
     try:
@@ -24,7 +25,11 @@ async def start(update: Update, context: CallbackContext) -> None:
         register_user(telegram_id=telegram_id, name=name)  # Ensure no explicit session argument
         await update.message.reply_text(f"Welcome, {name}! You have been registered as a passenger.")
     except Exception as e:
-        capture_exception(e)  # Send exception details to Sentry
+        with push_scope() as scope:
+            scope.set_tag("command", "/start")
+            scope.set_extra("user_id", update.effective_user.id)
+            scope.set_extra("error_message", str(e))
+            capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred. Please try again later.")
 
 async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -38,7 +43,11 @@ async def switch_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         else:
             await update.message.reply_text("You are not registered. Use /start to register.")
     except Exception as e:
-        capture_exception(e)  # Send exception details to Sentry
+        with push_scope() as scope:
+            scope.set_tag("command", "/switch_role")
+            scope.set_extra("user_id", update.effective_user.id)
+            scope.set_extra("error_message", str(e))
+            capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred while switching roles. Please try again.")
 
 async def create_trip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -144,3 +153,18 @@ async def my_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         capture_exception(e)  # Send exception details to Sentry
         await update.message.reply_text("An error occurred. Please try again later.")
+
+async def error_handler(update: object, context: CallbackContext) -> None:
+    """
+    Log the error and send a message to the user.
+    """
+    logging.error(f"Exception while handling an update: {context.error}")
+    with push_scope() as scope:
+        scope.set_tag("handler", "error_handler")
+        scope.set_extra("update", update.to_dict() if isinstance(update, Update) else str(update))
+        scope.set_extra("error_message", str(context.error))
+        capture_exception(context.error)
+    if isinstance(update, Update) and update.effective_message:
+        await update.effective_message.reply_text(
+            "An unexpected error occurred. Please try again later."
+        )

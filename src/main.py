@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException
-from sentry_sdk import capture_exception
+from sentry_sdk import capture_exception, push_scope  # Import push_scope for detailed context
 from telegram import Update
 from telegram.ext import Application, CallbackContext, CommandHandler, MessageHandler, filters
 from contextlib import asynccontextmanager
@@ -36,15 +36,16 @@ def initialize_application():
             .token(TELEGRAM_TOKEN)
             .build()
         )
-        # application.add_handler(CommandHandler("start", start))
-        # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-        # application.add_handler(MessageHandler(filters.ALL, debug_update))
         register_handlers(application)
 
         logger.info("Handlers registered")
         logger.info(f"Registered handlers: {[str(h) for h in application.handlers[0]]}")
         return application
     except Exception as e:
+        with push_scope() as scope:
+            scope.set_tag("function", "initialize_application")
+            scope.set_extra("error_message", str(e))
+            capture_exception(e)
         logger.error(f"Failed to initialize Application: {str(e)}")
         application = None
         raise
@@ -119,14 +120,21 @@ async def webhook(request: Request):
             await application.process_update(update)
             logger.info("Update processed successfully")
         except Exception as e:
+            with push_scope() as scope:
+                scope.set_tag("function", "webhook")
+                scope.set_extra("update_data", update.to_dict())
+                scope.set_extra("error_message", str(e))
+                capture_exception(e)
             logger.error(f"Error in process_update: {str(e)}")
-            capture_exception(e)
-            # Continue to return {"ok": True} since manual dispatch worked
             logger.warning("Falling back to manual dispatch due to process_update error")
         return {"ok": True}
     except Exception as e:
+        with push_scope() as scope:
+            scope.set_tag("function", "webhook")
+            scope.set_extra("request_data", await request.body())
+            scope.set_extra("error_message", str(e))
+            capture_exception(e)
         logger.error(f"Error in webhook: {str(e)}")
-        capture_exception(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 # Command handler
@@ -153,3 +161,4 @@ async def echo(update: Update, context: CallbackContext) -> None:
 # Debug handler for all updates
 async def debug_update(update: Update, context: CallbackContext) -> None:
     logger.debug(f"Debug: Received update: {update.to_dict()}")
+
